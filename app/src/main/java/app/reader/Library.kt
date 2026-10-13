@@ -1,11 +1,16 @@
 package app.reader
 
+import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
 import java.io.File
 import java.util.UUID
 
-data class Book(val id: String, val title: String)
+data class Book(val id: String, val title: String, val pct: Int)
+
+fun Activity.applyTheme(dark: Boolean) =
+    setTheme(if (dark) android.R.style.Theme_DeviceDefault else android.R.style.Theme_DeviceDefault_Light)
 
 class Library(private val ctx: Context) {
     private val dir = File(ctx.filesDir, "books").apply { mkdirs() }
@@ -15,7 +20,7 @@ class Library(private val ctx: Context) {
 
     fun books() = dir.listFiles().orEmpty().sortedByDescending { it.lastModified() }.map {
         val id = it.nameWithoutExtension
-        Book(id, prefs.getString("t:$id", id)!!)
+        Book(id, prefs.getString("t:$id", id)!!, prefs.getInt("c:$id", 0))
     }
 
     fun import(uri: Uri) {
@@ -33,16 +38,21 @@ class Library(private val ctx: Context) {
 
     fun remove(id: String) {
         file(id).delete()
-        prefs.edit().remove("t:$id").remove("i:$id").remove("f:$id").apply()
+        prefs.edit().remove("t:$id").remove("i:$id").remove("f:$id").remove("c:$id").apply()
     }
 
     fun position(id: String) = prefs.getInt("i:$id", 0) to prefs.getFloat("f:$id", 0f)
 
-    fun savePosition(id: String, index: Int, frac: Float) {
-        prefs.edit().putInt("i:$id", index).putFloat("f:$id", frac).apply()
+    fun savePosition(id: String, index: Int, frac: Float, pct: Int) {
+        prefs.edit().putInt("i:$id", index).putFloat("f:$id", frac).putInt("c:$id", pct).apply()
     }
 
     var zoom: Int
         get() = prefs.getInt("zoom", 100)
         set(v) { prefs.edit().putInt("zoom", v).apply() }
+
+    var dark: Boolean
+        get() = prefs.getBoolean("dark",
+            ctx.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES)
+        set(v) { prefs.edit().putBoolean("dark", v).apply() }
 }

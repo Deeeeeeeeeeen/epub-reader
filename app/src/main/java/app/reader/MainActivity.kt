@@ -12,12 +12,15 @@ import android.widget.Toast
 
 class MainActivity : Activity() {
     private lateinit var lib: Library
+    private var dark = false
     private lateinit var list: ListView
     private var books = listOf<Book>()
 
     override fun onCreate(b: Bundle?) {
-        super.onCreate(b)
         lib = Library(this)
+        dark = lib.dark
+        applyTheme(dark)
+        super.onCreate(b)
         list = ListView(this)
         setContentView(list)
         list.setOnItemClickListener { _, _, i, _ ->
@@ -31,11 +34,11 @@ class MainActivity : Activity() {
         }
     }
 
-    override fun onResume() { super.onResume(); refresh() }
+    override fun onResume() { super.onResume(); if (lib.dark != dark) recreate() else refresh() }
 
     private fun refresh() {
         books = lib.books()
-        list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, books.map { it.title })
+        list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, books.map { if (it.pct > 0) "${it.title} · ${it.pct}%" else it.title })
     }
 
     override fun onCreateOptionsMenu(m: Menu): Boolean {
